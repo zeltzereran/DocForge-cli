@@ -1,6 +1,5 @@
 """Rulebook management commands."""
 
-import sys
 from pathlib import Path
 
 import typer

@@ -91,10 +91,11 @@ def init(
 def doctor() -> None:
     """Check SpecWiz setup: API keys, adapters, and product readiness."""
     import os
+
     from rich.table import Table
 
     from specwiz.adapters import BlinkerEventBusAdapter, LocalStorageAdapter
-    from specwiz.cli._paths import DEFAULT_BASE, get_base_path
+    from specwiz.cli._paths import get_base_path
 
     table = Table(title="SpecWiz System Health")
     table.add_column("Check", style="cyan")
@@ -154,32 +155,44 @@ def doctor() -> None:
         )
 
     # Products
-    if base.exists():
-        products = sorted(d for d in base.iterdir() if d.is_dir() and d.name not in ("knowledge-base", "rulebooks"))
-        if products:
-            try:
-                base_rel = base.relative_to(cwd)
-            except ValueError:
-                base_rel = base
-            table.add_row("Products", "✓", f"{len(products)} found in {base_rel}")
-            for p in products:
-                ctx = any((p / "product-context").glob("*.md")) if (p / "product-context").exists() else False
-                status = "✓" if ctx else "⚠"
-                detail = f"product-context: {'✓' if ctx else '✗ (run: specwiz create product-context --product ' + p.name + ' --git .)'}"
-                table.add_row(f"  └ {p.name}", status, detail)
-        else:
-            try:
-                base_rel = base.relative_to(cwd)
-            except ValueError:
-                base_rel = base
-            table.add_row("Products", "⚠", f"No products found in {base_rel}")
-    else:
+    _add_product_rows(table, base, cwd)
+
+    console.print(table)
+
+
+def _add_product_rows(table, base: Path, cwd: Path) -> None:
+    """Add per-product health rows to the doctor table."""
+    from specwiz.cli._paths import DEFAULT_BASE
+
+    if not base.exists():
         table.add_row(
             "Products", "⚠",
             f"No {DEFAULT_BASE}/ directory — run: specwiz init --product <name>"
         )
+        return
 
-    console.print(table)
+    products = sorted(
+        d for d in base.iterdir()
+        if d.is_dir() and d.name not in ("knowledge-base", "rulebooks")
+    )
+    try:
+        base_rel = base.relative_to(cwd)
+    except ValueError:
+        base_rel = base
+
+    if not products:
+        table.add_row("Products", "⚠", f"No products found in {base_rel}")
+        return
+
+    table.add_row("Products", "✓", f"{len(products)} found in {base_rel}")
+    for p in products:
+        ctx = any((p / "product-context").glob("*.md")) if (p / "product-context").exists() else False
+        status = "✓" if ctx else "⚠"
+        detail = (
+            f"product-context: {'✓' if ctx else '✗ (run: specwiz create product-context --product '
+            + p.name + ' --git .)'}"
+        )
+        table.add_row(f"  └ {p.name}", status, detail)
 
 
 @app.callback(invoke_without_command=True)

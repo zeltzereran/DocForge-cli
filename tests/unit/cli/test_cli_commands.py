@@ -1,16 +1,21 @@
 """Tests for CLI commands."""
 
+import re
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from rich.console import Console
 from typer.testing import CliRunner
 
-from rich.console import Console
-
-from specwiz.cli._paths import load_sources, _is_remote_url
+from specwiz.cli._paths import _is_remote_url, load_sources
 from specwiz.cli.main import app
+
+
+def _strip_ansi(text: str) -> str:
+    """Strip ANSI escape codes from text for portable assertions."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 _console = Console(quiet=True)
 
@@ -156,16 +161,18 @@ def test_cli_create_rulebook_prd_help():
     """Test create rulebook prd command help — no --product, only --resources."""
     result = runner.invoke(app, ["create", "rulebook", "prd", "--help"])
     assert result.exit_code == 0
-    assert "--product" not in result.stdout
-    assert "--resources" in result.stdout
+    plain = _strip_ansi(result.stdout)
+    assert "--product" not in plain
+    assert "--resources" in plain
 
 
 def test_cli_create_knowledge_base_help():
     """Test create knowledge-base command help — no --product, only --sources."""
     result = runner.invoke(app, ["create", "knowledge-base", "--help"])
     assert result.exit_code == 0
-    assert "--product" not in result.stdout
-    assert "--sources" in result.stdout
+    plain = _strip_ansi(result.stdout)
+    assert "--product" not in plain
+    assert "--sources" in plain
 
 
 def test_cli_rulebook_list_command():
@@ -261,21 +268,21 @@ def test_prd_help_includes_resources():
     """--resources option appears in prd help output."""
     result = runner.invoke(app, ["generate", "prd", "--help"])
     assert result.exit_code == 0
-    assert "--resources" in result.stdout
+    assert "--resources" in _strip_ansi(result.stdout)
 
 
 def test_user_guide_help_includes_resources():
     """--resources option appears in user-guide help output."""
     result = runner.invoke(app, ["generate", "user-guide", "--help"])
     assert result.exit_code == 0
-    assert "--resources" in result.stdout
+    assert "--resources" in _strip_ansi(result.stdout)
 
 
 def test_release_notes_help_includes_resources():
     """--resources option appears in release-notes help output."""
     result = runner.invoke(app, ["generate", "release-notes", "--help"])
     assert result.exit_code == 0
-    assert "--resources" in result.stdout
+    assert "--resources" in _strip_ansi(result.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -433,6 +440,7 @@ def test_load_git_repo_from_url_clones_and_walks(tmp_path):
 def test_load_git_repo_from_url_git_not_found():
     """load_git_repo_from_url exits with code 1 when git is not on PATH."""
     import pytest
+
     from specwiz.cli._paths import load_git_repo_from_url
 
     with patch("specwiz.cli._paths.shutil.which", return_value=None), \
@@ -445,6 +453,7 @@ def test_load_git_repo_from_url_git_not_found():
 def test_load_git_repo_from_url_clone_failure():
     """load_git_repo_from_url exits with code 1 on non-zero git return code."""
     import pytest
+
     from specwiz.cli._paths import load_git_repo_from_url
 
     mock_result = MagicMock()

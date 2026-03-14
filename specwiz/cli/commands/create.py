@@ -12,17 +12,16 @@ from rich.progress import Progress
 
 from specwiz.cli._engine import run_stage
 from specwiz.cli._paths import (
+    _is_remote_url,
     get_base_path,
     get_knowledge_base_path,
     get_product_context_dir,
     get_rulebook_path,
-    load_knowledge_base,
     load_git_repo,
     load_git_repo_from_url,
+    load_knowledge_base,
     load_sources,
-    _is_remote_url,
     validate_product,
-    validate_product_context,
 )
 
 create_app = typer.Typer(help="Create knowledge base, product context, and rulebooks")
