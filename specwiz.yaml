@@ -1,0 +1,4 @@
+# SpecWiz Configuration
+base_path: .specwiz
+llm_provider: anthropic
+llm_model: claude-3-5-sonnet-20241022
