@@ -22,9 +22,7 @@ def list() -> None:
 
     if not rulebooks_dir.exists():
         console.print("[yellow]No rulebooks found.[/yellow]")
-        console.print(
-            "Run: [cyan]specwiz create rulebook prd --resources ./examples[/cyan]"
-        )
+        console.print("Run: [cyan]specwiz create rulebook prd --resources ./examples[/cyan]")
         return
 
     table = Table(title="Global Rulebooks")

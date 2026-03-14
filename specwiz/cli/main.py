@@ -21,15 +21,21 @@ app = typer.Typer(
 console = Console()
 
 # Add command groups
-app.add_typer(create_app, name="create", help="Create knowledge base, product context, and rulebooks")
-app.add_typer(generate_app, name="generate", help="Generate documents (PRD, user guide, release notes)")
+app.add_typer(
+    create_app, name="create", help="Create knowledge base, product context, and rulebooks"
+)
+app.add_typer(
+    generate_app, name="generate", help="Generate documents (PRD, user guide, release notes)"
+)
 app.add_typer(rulebook_app, name="rulebook", help="Manage documentation rulebooks")
 
 
 @app.command()
 def init(
     product: str = typer.Option(..., "--product", help="Product name"),
-    base_path: str = typer.Option(".specwiz", "--base-path", help="Base directory for product storage"),
+    base_path: str = typer.Option(
+        ".specwiz", "--base-path", help="Base directory for product storage"
+    ),
 ) -> None:
     """Initialize a new SpecWiz product directory."""
     from rich.panel import Panel
@@ -134,8 +140,7 @@ def doctor() -> None:
         table.add_row("Knowledge Base", "✓", str(kb_file.relative_to(cwd)))
     else:
         table.add_row(
-            "Knowledge Base", "⚠",
-            "Not found — run: specwiz create knowledge-base --sources <path>"
+            "Knowledge Base", "⚠", "Not found — run: specwiz create knowledge-base --sources <path>"
         )
 
     # Global: rulebooks
@@ -150,8 +155,7 @@ def doctor() -> None:
         table.add_row("Rulebooks", "✓" if created else "⚠", rb_detail)
     else:
         table.add_row(
-            "Rulebooks", "⚠",
-            "No rulebooks — run: specwiz create rulebook prd --resources <path>"
+            "Rulebooks", "⚠", "No rulebooks — run: specwiz create rulebook prd --resources <path>"
         )
 
     # Products
@@ -166,14 +170,12 @@ def _add_product_rows(table, base: Path, cwd: Path) -> None:
 
     if not base.exists():
         table.add_row(
-            "Products", "⚠",
-            f"No {DEFAULT_BASE}/ directory — run: specwiz init --product <name>"
+            "Products", "⚠", f"No {DEFAULT_BASE}/ directory — run: specwiz init --product <name>"
         )
         return
 
     products = sorted(
-        d for d in base.iterdir()
-        if d.is_dir() and d.name not in ("knowledge-base", "rulebooks")
+        d for d in base.iterdir() if d.is_dir() and d.name not in ("knowledge-base", "rulebooks")
     )
     try:
         base_rel = base.relative_to(cwd)
@@ -186,12 +188,14 @@ def _add_product_rows(table, base: Path, cwd: Path) -> None:
 
     table.add_row("Products", "✓", f"{len(products)} found in {base_rel}")
     for p in products:
-        ctx = any((p / "product-context").glob("*.md")) if (p / "product-context").exists() else False
-        status = "✓" if ctx else "⚠"
-        detail = (
-            f"product-context: {'✓' if ctx else '✗ (run: specwiz create product-context --product '
-            + p.name + ' --git .)'}"
+        ctx = (
+            any((p / "product-context").glob("*.md")) if (p / "product-context").exists() else False
         )
+        status = "✓" if ctx else "⚠"
+        ctx_hint = (
+            "✓" if ctx else f"✗ (run: specwiz create product-context --product {p.name} --git .)"
+        )
+        detail = f"product-context: {ctx_hint}"
         table.add_row(f"  └ {p.name}", status, detail)
 
 

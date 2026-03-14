@@ -29,10 +29,10 @@ def _timestamp() -> str:
     return datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
-
 # ──────────────────────────────────────────────
 # generate prd
 # ──────────────────────────────────────────────
+
 
 @generate_app.command("prd")
 def prd(
@@ -92,6 +92,7 @@ def prd(
 # ──────────────────────────────────────────────
 # generate user-guide
 # ──────────────────────────────────────────────
+
 
 @generate_app.command("user-guide")
 def user_guide(
@@ -159,6 +160,7 @@ def user_guide(
 # ──────────────────────────────────────────────
 # generate release-notes
 # ──────────────────────────────────────────────
+
 
 @generate_app.command("release-notes")
 def release_notes(

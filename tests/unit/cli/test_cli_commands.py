@@ -17,6 +17,7 @@ def _strip_ansi(text: str) -> str:
     """Strip ANSI escape codes from text for portable assertions."""
     return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
+
 _console = Console(quiet=True)
 
 
@@ -29,23 +30,30 @@ def _load_sources(paths):
 # _is_remote_url tests
 # ---------------------------------------------------------------------------
 
+
 def test_is_remote_url_https():
     assert _is_remote_url("https://github.com/org/repo") is True
+
 
 def test_is_remote_url_http():
     assert _is_remote_url("http://github.com/org/repo") is True
 
+
 def test_is_remote_url_ssh():
     assert _is_remote_url("git@github.com:org/repo.git") is True
+
 
 def test_is_remote_url_git_protocol():
     assert _is_remote_url("git://github.com/org/repo.git") is True
 
+
 def test_is_remote_url_local_dot():
     assert _is_remote_url(".") is False
 
+
 def test_is_remote_url_local_path():
     assert _is_remote_url("/home/user/projects/myrepo") is False
+
 
 def test_is_remote_url_relative_path():
     assert _is_remote_url("../myrepo") is False
@@ -78,6 +86,7 @@ def test_cli_init_command():
     """Test CLI init command."""
     with tempfile.TemporaryDirectory() as tmpdir:
         import os
+
         orig = os.getcwd()
         try:
             os.chdir(tmpdir)
@@ -178,6 +187,7 @@ def test_cli_create_knowledge_base_help():
 def test_cli_rulebook_list_command():
     """Test listing global rulebooks (no --product required)."""
     import os
+
     with tempfile.TemporaryDirectory() as tmpdir:
         # Set up global rulebooks directory
         rulebooks_dir = Path(tmpdir) / ".specwiz" / "rulebooks"
@@ -415,6 +425,7 @@ def test_cli_command_isolation():
 # load_git_repo_from_url tests
 # ---------------------------------------------------------------------------
 
+
 def test_load_git_repo_from_url_clones_and_walks(tmp_path):
     """load_git_repo_from_url should clone, walk, and clean up the tempdir."""
     from specwiz.cli._paths import load_git_repo_from_url
@@ -430,8 +441,9 @@ def test_load_git_repo_from_url_clones_and_walks(tmp_path):
         result.stderr = ""
         return result
 
-    with patch("specwiz.cli._paths.subprocess.run", side_effect=fake_run), \
-         patch("specwiz.cli._paths.shutil.which", return_value="/usr/bin/git"):
+    with patch("specwiz.cli._paths.subprocess.run", side_effect=fake_run), patch(
+        "specwiz.cli._paths.shutil.which", return_value="/usr/bin/git"
+    ):
         content = load_git_repo_from_url("https://github.com/org/repo.git", _console)
 
     assert fake_content in content
@@ -443,8 +455,9 @@ def test_load_git_repo_from_url_git_not_found():
 
     from specwiz.cli._paths import load_git_repo_from_url
 
-    with patch("specwiz.cli._paths.shutil.which", return_value=None), \
-         pytest.raises(SystemExit) as exc_info:
+    with patch("specwiz.cli._paths.shutil.which", return_value=None), pytest.raises(
+        SystemExit
+    ) as exc_info:
         load_git_repo_from_url("https://github.com/org/repo.git", _console)
 
     assert exc_info.value.code == 1
@@ -460,10 +473,9 @@ def test_load_git_repo_from_url_clone_failure():
     mock_result.returncode = 128
     mock_result.stderr = "fatal: repository not found"
 
-    with patch("specwiz.cli._paths.shutil.which", return_value="/usr/bin/git"), \
-         patch("specwiz.cli._paths.subprocess.run", return_value=mock_result), \
-         pytest.raises(SystemExit) as exc_info:
+    with patch("specwiz.cli._paths.shutil.which", return_value="/usr/bin/git"), patch(
+        "specwiz.cli._paths.subprocess.run", return_value=mock_result
+    ), pytest.raises(SystemExit) as exc_info:
         load_git_repo_from_url("https://github.com/org/missing.git", _console)
 
     assert exc_info.value.code == 1
-

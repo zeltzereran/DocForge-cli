@@ -25,22 +25,41 @@ _PRODUCT_CONTEXT_FILES = [
 ]
 
 _SOURCE_EXTENSIONS = {
-    ".md", ".txt", ".yaml", ".yml", ".py", ".ts", ".js",
-    ".go", ".java", ".rs", ".json", ".toml",
+    ".md",
+    ".txt",
+    ".yaml",
+    ".yml",
+    ".py",
+    ".ts",
+    ".js",
+    ".go",
+    ".java",
+    ".rs",
+    ".json",
+    ".toml",
 }
 
 _GIT_EXCLUDE_DIRS = {
-    ".git", "__pycache__", "node_modules", ".venv", "venv",
-    "dist", "build", ".specwiz", ".mypy_cache", ".pytest_cache",
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".specwiz",
+    ".mypy_cache",
+    ".pytest_cache",
 }
 
-_GIT_MAX_FILE_CHARS = 50_000    # skip files larger than 50 KB
+_GIT_MAX_FILE_CHARS = 50_000  # skip files larger than 50 KB
 _GIT_MAX_TOTAL_CHARS = 400_000  # stop scanning after ~400 KB of content
 
 
 # ──────────────────────────────────────────────
 # Path resolution
 # ──────────────────────────────────────────────
+
 
 def get_base_path(cwd: Path) -> Path:
     """Return the configured base storage path (default: .specwiz in cwd)."""
@@ -87,6 +106,7 @@ def get_generated_dir(product: str, doc_type: str, cwd: Path) -> Path:
 # Validation helpers (exit on failure)
 # ──────────────────────────────────────────────
 
+
 def validate_product(product: str, cwd: Path) -> Path:
     """Return the product directory or exit with a helpful error."""
     path = get_product_path(product, cwd)
@@ -127,6 +147,7 @@ def validate_rulebook(rulebook_type: str, cwd: Path) -> str:
 # File loading helpers
 # ──────────────────────────────────────────────
 
+
 def load_file(path: Path) -> str:
     """Read a file's content, or return empty string if it doesn't exist."""
     try:
@@ -162,10 +183,7 @@ def load_git_repo_from_url(url: str, console: Console) -> str:
             text=True,
         )
         if result.returncode != 0:
-            console.print(
-                f"[red]Error: git clone failed.[/red]\n"
-                f"{result.stderr.strip()}"
-            )
+            console.print(f"[red]Error: git clone failed.[/red]\n" f"{result.stderr.strip()}")
             sys.exit(1)
         return load_git_repo(Path(tmpdir), console)
     finally:
@@ -196,8 +214,7 @@ def load_sources(paths: List[str], console: Console) -> str:
             files = [p]
         else:
             files = sorted(
-                f for f in p.rglob("*")
-                if f.is_file() and f.suffix in _SOURCE_EXTENSIONS
+                f for f in p.rglob("*") if f.is_file() and f.suffix in _SOURCE_EXTENSIONS
             )
         for f in files:
             try:

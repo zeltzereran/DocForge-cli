@@ -18,8 +18,9 @@ def mock_anthropic_client():
 @pytest.fixture(autouse=True)
 def patch_anthropic_clients():
     """Prevent real httpx clients from being created in every test."""
-    with patch("specwiz.adapters.llm.Anthropic") as mock_sync, \
-         patch("specwiz.adapters.llm.AsyncAnthropic") as mock_async:
+    with patch("specwiz.adapters.llm.Anthropic") as mock_sync, patch(
+        "specwiz.adapters.llm.AsyncAnthropic"
+    ) as mock_async:
         yield mock_sync, mock_async
 
 
@@ -27,6 +28,7 @@ def patch_anthropic_clients():
 async def test_anthropic_adapter_initialization():
     """Test AnthropicAdapter initialization."""
     import os
+
     os.environ["ANTHROPIC_API_KEY"] = "test-key"
     try:
         adapter = AnthropicAdapter(model="claude-3-opus-20240229")
@@ -157,4 +159,3 @@ async def test_llm_response_creation():
     assert response.model == "claude-3-opus-20240229"
     assert response.usage["input_tokens"] == 100
     assert response.stop_reason == "end_turn"
-

@@ -35,6 +35,7 @@ console = Console()
 # knowledge-base
 # ──────────────────────────────────────────────
 
+
 @create_app.command("knowledge-base")
 def knowledge_base(
     sources: Optional[List[str]] = typer.Option(
@@ -46,9 +47,7 @@ def knowledge_base(
     """Build the global knowledge base from source documents."""
     if not sources:
         console.print("[red]Error: at least one --sources path is required.[/red]")
-        console.print(
-            "Example: [cyan]specwiz create knowledge-base --sources ./docs[/cyan]"
-        )
+        console.print("Example: [cyan]specwiz create knowledge-base --sources ./docs[/cyan]")
         sys.exit(1)
 
     cwd = Path.cwd()
@@ -56,7 +55,9 @@ def knowledge_base(
 
     sources_content = load_sources(sources, console)
     if not sources_content.strip():
-        console.print("[red]Error: no readable content found in the provided --sources paths.[/red]")
+        console.print(
+            "[red]Error: no readable content found in the provided --sources paths.[/red]"
+        )
         sys.exit(1)
 
     out_path = get_knowledge_base_path(cwd)
@@ -81,8 +82,7 @@ def knowledge_base(
 
     console.print(
         Panel(
-            f"[green]✓ Knowledge base created![/green]\n"
-            f"Output: {out_path.relative_to(cwd)}",
+            f"[green]✓ Knowledge base created![/green]\n" f"Output: {out_path.relative_to(cwd)}",
             title="Knowledge Base",
             expand=False,
         )
@@ -92,6 +92,7 @@ def knowledge_base(
 # ──────────────────────────────────────────────
 # product-context
 # ──────────────────────────────────────────────
+
 
 @create_app.command("product-context")
 def product_context(
@@ -182,6 +183,7 @@ def product_context(
 # rulebook (shared logic)
 # ──────────────────────────────────────────────
 
+
 def _build_rulebook(
     rulebook_type: str,
     stage_name: str,
@@ -234,6 +236,7 @@ def _build_rulebook(
 # ──────────────────────────────────────────────
 # rulebook sub-commands
 # ──────────────────────────────────────────────
+
 
 @create_rulebook_app.command("prd")
 def rulebook_prd(
