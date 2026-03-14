@@ -284,6 +284,47 @@ def test_release_notes_help_includes_sources():
     assert "--sources" in result.stdout
 
 
+# ---------------------------------------------------------------------------
+# rulebook generate tests
+# ---------------------------------------------------------------------------
+
+
+def test_rulebook_generate_help_includes_sources():
+    """--sources option appears in rulebook generate help."""
+    result = runner.invoke(app, ["rulebook", "generate", "--help"])
+    assert result.exit_code == 0
+    assert "--sources" in result.stdout
+
+
+def test_rulebook_generate_help_includes_product():
+    """--product option appears in rulebook generate help."""
+    result = runner.invoke(app, ["rulebook", "generate", "--help"])
+    assert result.exit_code == 0
+    assert "--product" in result.stdout
+
+
+def test_rulebook_generate_requires_product():
+    """rulebook generate fails without --product."""
+    result = runner.invoke(app, ["rulebook", "generate"])
+    assert result.exit_code != 0
+
+
+def test_example_input_keys_not_in_context_keys():
+    """_CONTEXT_INPUT_KEYS and _EXAMPLE_INPUT_KEYS are disjoint."""
+    from specwiz.cli.commands.generate import _CONTEXT_INPUT_KEYS, _EXAMPLE_INPUT_KEYS
+
+    assert set(_CONTEXT_INPUT_KEYS).isdisjoint(set(_EXAMPLE_INPUT_KEYS))
+
+
+def test_load_sources_used_by_rulebook_generate(tmp_path: Path) -> None:
+    """_load_sources correctly reads a file; used by rulebook generate path."""
+    doc = tmp_path / "example.md"
+    doc.write_text("# Example Standard\nDo things this way.")
+    result = _load_sources([str(doc)])
+    assert "Example Standard" in result
+    assert "--- example.md ---" in result
+
+
 def test_cli_invalid_command():
     """Test CLI with invalid command."""
     result = runner.invoke(app, ["invalid-command"])

@@ -62,6 +62,23 @@ specwiz generate prd \
   --repo /path/to/repo
 ```
 
+Optionally inject extra source documents (PRDs, architecture docs, design files) to give the pipeline richer context:
+
+```bash
+specwiz generate prd \
+  --product MyProduct \
+  --feature "New Dashboard" \
+  --repo /path/to/repo \
+  --sources docs/prd.md \
+  --sources docs/sad.md
+```
+
+You can also pass a directory — all `.md`, `.txt`, `.yaml`, and `.py` files inside it are loaded:
+
+```bash
+specwiz generate prd --product MyProduct --repo /path/to/repo --sources ./docs/
+```
+
 ### Generate a User Guide
 
 ```bash
@@ -69,7 +86,8 @@ specwiz generate user-guide \
   --product MyProduct \
   --feature "Dashboard" \
   --audience "end-users" \
-  --repo /path/to/repo
+  --repo /path/to/repo \
+  --sources docs/
 ```
 
 ### Generate Release Notes
@@ -78,7 +96,8 @@ specwiz generate user-guide \
 specwiz generate release-notes \
   --product MyProduct \
   --version 1.0.0 \
-  --repo /path/to/repo
+  --repo /path/to/repo \
+  --sources docs/
 ```
 
 ## Manage Rulebooks
@@ -198,13 +217,13 @@ Edit the created rulebooks to match your standards.
 
 ```bash
 # Generate PRD for a new feature
-specwiz generate prd --product Acme --feature "User Analytics"
+specwiz generate prd --product Acme --feature "User Analytics" --sources docs/
 
 # Generate user guide
-specwiz generate user-guide --product Acme --feature "User Analytics" --audience developers
+specwiz generate user-guide --product Acme --feature "User Analytics" --audience developers --sources docs/
 
 # Generate release notes (after release)
-specwiz generate release-notes --product Acme --version 2.0.0
+specwiz generate release-notes --product Acme --version 2.0.0 --sources docs/
 ```
 
 ### 4. Review and Edit

@@ -22,10 +22,14 @@ from specwiz.core.managers import CompositeConfigAdapter
 generate_app = typer.Typer(help="Generate documents")
 console = Console()
 
-# Template variables that accept external source documents, keyed by stage
-_SOURCE_INPUT_KEYS = (
+# Context variables injected when --sources is used with generate commands (additional info)
+_CONTEXT_INPUT_KEYS = (
     "source_materials",       # knowledge_base_generator
     "supporting_documents",   # product_context_generator
+)
+
+# Example variables injected when --sources is used with rulebook generate (style/standards examples)
+_EXAMPLE_INPUT_KEYS = (
     "example_requirements",   # engineering_rulebook_generator
     "example_user_guides",    # writing_rulebook_generator
     "example_diagrams",       # architecture_rulebook_generator
@@ -77,7 +81,7 @@ async def _execute_generation(
         if source_paths:
             sources_content = _load_sources(source_paths)
             if sources_content:
-                for key in _SOURCE_INPUT_KEYS:
+                for key in _CONTEXT_INPUT_KEYS:
                     options.setdefault(key, sources_content)
 
         # Initialize adapters

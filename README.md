@@ -18,6 +18,9 @@ specwiz init --product MyProduct --repo /path/to/repo
 # Generate a PRD
 specwiz generate prd --product MyProduct --feature "New Dashboard"
 
+# Generate a PRD with extra source documents (PRD, SAD, design docs)
+specwiz generate prd --product MyProduct --feature "New Dashboard" --sources docs/prd.md --sources docs/sad.md
+
 # Generate a user guide
 specwiz generate user-guide --product MyProduct --feature "Dashboard"
 
