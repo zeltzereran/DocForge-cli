@@ -1,14 +1,13 @@
 # SpecWiz CLI - Quick Start Guide
 
-Welcome to SpecWiz! This guide will get you up and running in minutes.
+Welcome to SpecWiz! This guide walks you through the complete workflow, from installation to generating your first document.
 
 ## Installation
 
 ### Prerequisites
 
 - Python 3.10 or higher
-- `pip` or `pipenv`
-- Anthropic API key (for LLM-based generation)
+- Anthropic API key
 
 ### Install from Source
 
@@ -32,254 +31,200 @@ pip install -e ".[dev]"
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-Or create a `.env` file in your project:
+A `specwiz.yaml` file is created automatically when you run `specwiz init`. You can edit it to change the storage path or LLM model:
 
-```bash
-# .env
-ANTHROPIC_API_KEY=sk-ant-...
-SPECWIZ_PROJECT_NAME=MyProduct
-SPECWIZ_STORAGE_PATH=.specwiz
+```yaml
+# specwiz.yaml
+base_path: .specwiz
+llm_provider: anthropic
+llm_model: claude-3-5-sonnet-20241022
 ```
 
-## Initialize a Project
+---
 
-```bash
-specwiz init --product MyProduct --repo /path/to/repo
-```
+## Concepts: Global vs Product-Specific Artifacts
 
-This creates:
-- `specwiz.yaml` - Project configuration
-- `.specwiz/` - Output directory for generated artifacts
+SpecWiz has two tiers of artifacts:
 
-## Generate Documentation
+| Artifact | Scope | Command |
+|---|---|---|
+| Knowledge Base | **Global** (whole workspace) | `create knowledge-base` |
+| Rulebooks | **Global** (whole workspace) | `create rulebook <type>` |
+| Product Context | **Per product** | `create product-context --product <name>` |
+| Generated docs | **Per product** | `generate prd/user-guide/release-notes --product <name>` |
 
-### Generate a Product Requirements Document (PRD)
+The global knowledge base and rulebooks reflect your organization's standards and example documents � they are created **once** and shared across all products in the workspace.
 
-```bash
-specwiz generate prd \
-  --product MyProduct \
-  --feature "New Dashboard" \
-  --repo /path/to/repo
-```
+---
 
-Optionally inject extra source documents (PRDs, architecture docs, design files) to give the pipeline richer context:
+## Directory Layout
 
-```bash
-specwiz generate prd \
-  --product MyProduct \
-  --feature "New Dashboard" \
-  --repo /path/to/repo \
-  --sources docs/prd.md \
-  --sources docs/sad.md
-```
-
-You can also pass a directory — all `.md`, `.txt`, `.yaml`, and `.py` files inside it are loaded:
-
-```bash
-specwiz generate prd --product MyProduct --repo /path/to/repo --sources ./docs/
-```
-
-### Generate a User Guide
-
-```bash
-specwiz generate user-guide \
-  --product MyProduct \
-  --feature "Dashboard" \
-  --audience "end-users" \
-  --repo /path/to/repo \
-  --sources docs/
-```
-
-### Generate Release Notes
-
-```bash
-specwiz generate release-notes \
-  --product MyProduct \
-  --version 1.0.0 \
-  --repo /path/to/repo \
-  --sources docs/
-```
-
-## Manage Rulebooks
-
-Rulebooks are the heart of SpecWiz - they codify your organization's documentation standards.
-
-### Initialize Rulebooks
-
-```bash
-# Create an engineering standards rulebook
-specwiz rulebook create \
-  --name engineering_standards \
-  --category engineering
-
-# Create a writing guide
-specwiz rulebook create \
-  --name style_guide \
-  --category writing
-```
-
-### List and Validate Rulebooks
-
-```bash
-# List all rulebooks
-specwiz rulebook list
-
-# Validate all rulebooks
-specwiz rulebook validate
-```
-
-## Check System Health
-
-```bash
-specwiz doctor
-```
-
-This checks:
-- Python version and packages
-- Configuration validity
-- API connectivity
-- Adapter readiness
-
-## Understanding the Generation Pipeline
-
-SpecWiz uses a 9-stage pipeline to generate documentation:
-
-**Stage 1:** Knowledge Base Generator
-- Analyzes source materials and creates a consolidated knowledge base
-
-**Stage 2:** Product Context Generator
-- Extracts repository structure, architecture, and data model
-
-**Stages 3-6:** Rulebook Generators
-- Engineering rulebook - coding standards, architecture patterns
-- Writing rulebook - documentation tone, style, structure
-- Architecture rulebook - system design principles
-- QA rulebook - testing strategies and standards
-
-**Stages 7-9:** Document Generators
-- PRD generator - product requirements
-- User guide generator - step-by-step instructions
-- Release notes generator - versioned change documentation
-
-Each stage uses the output of previous stages as input.
-
-## Project Structure
+After initialization and creating all artifacts, your workspace will look like:
 
 ```
 project_root/
-├── specwiz.yaml                 # Project config
-├── .specwiz/                    # Generated artifacts
-│   ├── knowledge_base.json
-│   ├── context/
-│   │   ├── overview.md
-│   │   ├── architecture.md
-│   │   └── glossary.md
-│   ├── rulebooks/
-│   │   ├── engineering/
-│   │   ├── writing/
-│   │   └── architecture/
-│   └── generated/
-│       ├── prd.md
-│       ├── user_guide.md
-│       └── release_notes.md
-├── rulebooks/                    # Organization rulebooks (git tracked)
-│   ├── engineering/
-│   │   └── engineering-rulebook.md
-│   ├── writing/
-│   │   └── writing-rulebook.md
-│   └── architecture/
-│       └── architecture-rulebook.md
-└── examples/                      # Example documents
-    └── release-notes/
+├── specwiz.yaml
+└── .specwiz/
+    ├── knowledge-base/
+    │   └── knowledge-base.md        <- global, created by `create knowledge-base`
+    ├── rulebooks/
+    │   ├── prd-rulebook.md          <- global, created by `create rulebook prd`
+    │   ├── user-guide-rulebook.md   <- global, created by `create rulebook user-guide`
+    │   ├── release-note-rulebook.md <- global, created by `create rulebook release-note`
+    │   └── diagram-rulebook.md      <- global, created by `create rulebook diagram`
+    └── <product>/
+        ├── product-context/
+        │   └── product-context.md   <- per-product, created by `create product-context`
+        └── generated/
+            ├── prd/
+            ├── user-guide/
+            └── release-notes/
 ```
 
-## Workflow Example
+---
 
-### 1. Initialize Project
+## Step-by-Step Workflow
+
+### Step 1 - Initialize a product
 
 ```bash
-specwiz init --product Acme --repo ~/projects/acme
-cd ~/projects/acme
+specwiz init --product MyProduct
 ```
 
-### 2. Create Rulebooks
+Creates the per-product directory structure under `.specwiz/MyProduct/`.
 
-Create your organization's documentation standards:
+### Step 2 - Build the global knowledge base
 
 ```bash
-specwiz rulebook create --name engineering-standards --category engineering
-specwiz rulebook create --name documentation-style --category writing
+specwiz create knowledge-base --sources ./docs
 ```
 
-Edit the created rulebooks to match your standards.
+Reads all `.md`, `.txt`, `.yaml`, and `.py` files from the provided paths and summarises them into a global knowledge base. Run this once per workspace (or re-run to refresh).
 
-### 3. Generate Documents
+You can pass multiple paths:
 
 ```bash
-# Generate PRD for a new feature
-specwiz generate prd --product Acme --feature "User Analytics" --sources docs/
-
-# Generate user guide
-specwiz generate user-guide --product Acme --feature "User Analytics" --audience developers --sources docs/
-
-# Generate release notes (after release)
-specwiz generate release-notes --product Acme --version 2.0.0 --sources docs/
+specwiz create knowledge-base --sources ./docs --sources ./architecture/README.md
 ```
 
-### 4. Review and Edit
+### Step 3 - Create product context
 
-The generated documents are in `.specwiz/generated/`. Review them, make any necessary adjustments, and commit to your repository.
+```bash
+specwiz create product-context --product MyProduct --git .
+```
 
-## Environment Variables
+You can also pass a remote URL — SpecWiz will shallow-clone it automatically (requires `git` on `PATH`):
 
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `ANTHROPIC_API_KEY` | Anthropic Claude API key | Required |
-| `SPECWIZ_PROJECT_NAME` | Project name | "" |
-| `SPECWIZ_PROJECT_ROOT` | Project root directory | Current dir |
-| `SPECWIZ_STORAGE_PATH` | Artifact storage path | `.specwiz` |
-| `SPECWIZ_LLM_MODEL` | Claude model to use | `claude-3-opus-20240229` |
-| `SPECWIZ_TEMPERATURE` | LLM temperature (0-1) | `0.7` |
-| `SPECWIZ_MAX_TOKENS` | Max tokens per response | `4096` |
+```bash
+specwiz create product-context --product MyProduct --git https://github.com/org/repo.git
+specwiz create product-context --product MyProduct --git git@github.com:org/repo.git
+```
+
+```bash
+# Or use source documents instead of (or in addition to) the git repo
+specwiz create product-context --product MyProduct --git . --sources ./design-docs
+```
+
+### Step 4 - Create global rulebooks
+
+Rulebooks encode your organization's documentation standards, derived from real example documents.
+
+```bash
+specwiz create rulebook prd --resources ./examples/prd
+specwiz create rulebook user-guide --resources ./examples/user-guide
+specwiz create rulebook release-note --resources ./examples/release-notes
+specwiz create rulebook diagram --resources ./examples/diagrams
+```
+
+Each `--resources` path can be a file or a directory (scanned recursively).
+
+### Step 5 - Generate documents
+
+```bash
+# Generate a PRD
+specwiz generate prd --product MyProduct --feature "New Dashboard"
+
+# Generate a PRD with extra context
+specwiz generate prd --product MyProduct --feature "New Dashboard" --resources ./design-spec.md
+
+# Generate a user guide
+specwiz generate user-guide --product MyProduct --feature "Dashboard" --audience "end-users"
+
+# Generate release notes (--resources provides commits/changelog/PR list)
+specwiz generate release-notes --product MyProduct --release-version v1.2.0 --resources ./changelog.txt
+```
+
+---
+
+## Utility Commands
+
+```bash
+# List all global rulebooks and their status
+specwiz rulebook list
+
+# Check system health: API key, adapters, global artifacts, per-product contexts
+specwiz doctor
+```
+
+---
+
+## Common Workflows
+
+### Working with Multiple Products
+
+```bash
+# Each product has its own context and generated docs
+specwiz init --product ProductA
+specwiz init --product ProductB
+
+# Shared global artifacts (KB + rulebooks) are created once
+specwiz create knowledge-base --sources ./shared-docs
+
+# Per-product context
+specwiz create product-context --product ProductA --git ./productA
+specwiz create product-context --product ProductB --git ./productB
+
+# Generate independently
+specwiz generate prd --product ProductA --feature "Onboarding Flow"
+specwiz generate prd --product ProductB --feature "API Gateway"
+```
+
+### Refreshing Rulebooks
+
+Simply re-run the `create rulebook` command with updated example resources:
+
+```bash
+specwiz create rulebook prd --resources ./examples/prd-v2
+```
+
+---
 
 ## Troubleshooting
 
-### "ANTHROPIC_API_KEY not set"
+### `ANTHROPIC_API_KEY not set`
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-### "Generation failed"
+### Rulebook not found
 
-Run health check:
+Run `specwiz rulebook list` to see which rulebooks exist, then create any missing ones:
+
+```bash
+specwiz create rulebook prd --resources ./examples/prd
+```
+
+### Product not found
+
+Ensure you initialized the product first:
+
+```bash
+specwiz init --product MyProduct
+```
+
+### Check overall health
 
 ```bash
 specwiz doctor
 ```
-
-This shows configuration issues and adapter status.
-
-### "No project context found"
-
-Ensure your repository has:
-- `README.md` - Product overview
-- `pyproject.toml` or `package.json` - Project metadata
-- Documentation files or comments explaining the system
-
-## Next Steps
-
-- Read the [Architecture Guide](SpecWiz_SAD.md) for system design
-- Review the [Product Specification](SpecWiz_CLI_PRD.md) for feature details
-- Check the [Execution Plan](SpecWiz_Execution_Plan.md) for implementation roadmap
-
-## Support
-
-For issues or questions:
-- Check the [README](README.md)
-- Run `specwiz doctor` to diagnose problems
-- Review generated artifacts in `.specwiz/`
-
-## License
-
-Apache 2.0

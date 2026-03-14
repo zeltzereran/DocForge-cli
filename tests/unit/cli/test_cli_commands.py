@@ -2,12 +2,49 @@
 
 import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
-from specwiz.cli.commands.generate import _load_sources
+from rich.console import Console
+
+from specwiz.cli._paths import load_sources, _is_remote_url
 from specwiz.cli.main import app
+
+_console = Console(quiet=True)
+
+
+def _load_sources(paths):
+    """Thin wrapper so existing tests keep working with the new signature."""
+    return load_sources(paths, _console)
+
+
+# ---------------------------------------------------------------------------
+# _is_remote_url tests
+# ---------------------------------------------------------------------------
+
+def test_is_remote_url_https():
+    assert _is_remote_url("https://github.com/org/repo") is True
+
+def test_is_remote_url_http():
+    assert _is_remote_url("http://github.com/org/repo") is True
+
+def test_is_remote_url_ssh():
+    assert _is_remote_url("git@github.com:org/repo.git") is True
+
+def test_is_remote_url_git_protocol():
+    assert _is_remote_url("git://github.com/org/repo.git") is True
+
+def test_is_remote_url_local_dot():
+    assert _is_remote_url(".") is False
+
+def test_is_remote_url_local_path():
+    assert _is_remote_url("/home/user/projects/myrepo") is False
+
+def test_is_remote_url_relative_path():
+    assert _is_remote_url("../myrepo") is False
+
 
 runner = CliRunner()
 
@@ -35,14 +72,16 @@ def test_cli_version():
 def test_cli_init_command():
     """Test CLI init command."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = runner.invoke(
-            app,
-            [
-                "init",
-                "--repo",
-                tmpdir,
-            ],
-        )
+        import os
+        orig = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+            result = runner.invoke(
+                app,
+                ["init", "--product", "testproduct"],
+            )
+        finally:
+            os.chdir(orig)
 
         # Command should execute (may succeed or show usage)
         assert result.exit_code in [0, 2]
@@ -50,18 +89,9 @@ def test_cli_init_command():
 
 def test_cli_doctor_command():
     """Test CLI doctor command."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        result = runner.invoke(
-            app,
-            [
-                "doctor",
-                "--repo",
-                tmpdir,
-            ],
-        )
-
-        # Doctor should check system health
-        assert result.exit_code in [0, 1, 2]
+    result = runner.invoke(app, ["doctor"])
+    # Doctor should check system health
+    assert result.exit_code in [0, 1, 2]
 
 
 def test_cli_prd_command_help():
@@ -122,76 +152,40 @@ def test_cli_rulebook_list_help():
     assert "list" in result.stdout.lower() or "rulebook" in result.stdout.lower()
 
 
-def test_cli_rulebook_create_help():
-    """Test rulebook create command help."""
-    result = runner.invoke(
-        app,
-        [
-            "rulebook",
-            "create",
-            "--help",
-        ],
-    )
-
+def test_cli_create_rulebook_prd_help():
+    """Test create rulebook prd command help — no --product, only --resources."""
+    result = runner.invoke(app, ["create", "rulebook", "prd", "--help"])
     assert result.exit_code == 0
+    assert "--product" not in result.stdout
+    assert "--resources" in result.stdout
 
 
-def test_cli_rulebook_validate_help():
-    """Test rulebook validate command help."""
-    result = runner.invoke(
-        app,
-        [
-            "rulebook",
-            "validate",
-            "--help",
-        ],
-    )
-
+def test_cli_create_knowledge_base_help():
+    """Test create knowledge-base command help — no --product, only --sources."""
+    result = runner.invoke(app, ["create", "knowledge-base", "--help"])
     assert result.exit_code == 0
+    assert "--product" not in result.stdout
+    assert "--sources" in result.stdout
 
 
 def test_cli_rulebook_list_command():
-    """Test listing rulebooks."""
+    """Test listing global rulebooks (no --product required)."""
+    import os
     with tempfile.TemporaryDirectory() as tmpdir:
-        rulebook_dir = Path(tmpdir) / "rulebooks"
-        rulebook_dir.mkdir()
+        # Set up global rulebooks directory
+        rulebooks_dir = Path(tmpdir) / ".specwiz" / "rulebooks"
+        rulebooks_dir.mkdir(parents=True)
+        (rulebooks_dir / "prd-rulebook.md").write_text("# PRD Rulebook")
 
-        # Create a sample rulebook
-        (rulebook_dir / "engineering.md").write_text("# Engineering Rulebook")
+        orig = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+            result = runner.invoke(app, ["rulebook", "list"])
+        finally:
+            os.chdir(orig)
 
-        result = runner.invoke(
-            app,
-            [
-                "rulebook",
-                "list",
-                "--repo",
-                tmpdir,
-            ],
-        )
-
-        # Should list rulebooks
-        assert result.exit_code in [0, 1, 2]
-
-
-def test_cli_rulebook_create_command():
-    """Test creating a rulebook."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        result = runner.invoke(
-            app,
-            [
-                "rulebook",
-                "create",
-                "--name",
-                "test-rulebook",
-                "--category",
-                "engineering",
-                "--repo",
-                tmpdir,
-            ],
-        )
-
-        # Should execute or show error
-        assert result.exit_code in [0, 1, 2]
+        assert result.exit_code == 0
+        assert "prd" in result.stdout.lower()
 
 
 def test_cli_missing_required_option():
@@ -263,25 +257,25 @@ def test_load_sources_empty_list():
 # ---------------------------------------------------------------------------
 
 
-def test_prd_help_includes_sources():
-    """--sources option appears in prd help output."""
+def test_prd_help_includes_resources():
+    """--resources option appears in prd help output."""
     result = runner.invoke(app, ["generate", "prd", "--help"])
     assert result.exit_code == 0
-    assert "--sources" in result.stdout
+    assert "--resources" in result.stdout
 
 
-def test_user_guide_help_includes_sources():
-    """--sources option appears in user-guide help output."""
+def test_user_guide_help_includes_resources():
+    """--resources option appears in user-guide help output."""
     result = runner.invoke(app, ["generate", "user-guide", "--help"])
     assert result.exit_code == 0
-    assert "--sources" in result.stdout
+    assert "--resources" in result.stdout
 
 
-def test_release_notes_help_includes_sources():
-    """--sources option appears in release-notes help output."""
+def test_release_notes_help_includes_resources():
+    """--resources option appears in release-notes help output."""
     result = runner.invoke(app, ["generate", "release-notes", "--help"])
     assert result.exit_code == 0
-    assert "--sources" in result.stdout
+    assert "--resources" in result.stdout
 
 
 # ---------------------------------------------------------------------------
@@ -289,31 +283,26 @@ def test_release_notes_help_includes_sources():
 # ---------------------------------------------------------------------------
 
 
-def test_rulebook_generate_help_includes_sources():
-    """--sources option appears in rulebook generate help."""
-    result = runner.invoke(app, ["rulebook", "generate", "--help"])
-    assert result.exit_code == 0
-    assert "--sources" in result.stdout
-
-
-def test_rulebook_generate_help_includes_product():
-    """--product option appears in rulebook generate help."""
-    result = runner.invoke(app, ["rulebook", "generate", "--help"])
-    assert result.exit_code == 0
-    assert "--product" in result.stdout
-
-
-def test_rulebook_generate_requires_product():
-    """rulebook generate fails without --product."""
-    result = runner.invoke(app, ["rulebook", "generate"])
+def test_create_rulebook_prd_requires_product():
+    """create rulebook prd does NOT accept --product (it is global)."""
+    result = runner.invoke(app, ["create", "rulebook", "prd", "--product", "myapp"])
+    # --product is an unknown option, should fail
     assert result.exit_code != 0
 
 
-def test_example_input_keys_not_in_context_keys():
-    """_CONTEXT_INPUT_KEYS and _EXAMPLE_INPUT_KEYS are disjoint."""
-    from specwiz.cli.commands.generate import _CONTEXT_INPUT_KEYS, _EXAMPLE_INPUT_KEYS
+def test_create_rulebook_prd_requires_resources():
+    """create rulebook prd fails without --resources."""
+    result = runner.invoke(app, ["create", "rulebook", "prd"])
+    # Missing --resources should cause non-zero exit
+    assert result.exit_code != 0
 
-    assert set(_CONTEXT_INPUT_KEYS).isdisjoint(set(_EXAMPLE_INPUT_KEYS))
+
+def test_source_extensions_include_common_types():
+    """_SOURCE_EXTENSIONS in _paths covers the main file types."""
+    from specwiz.cli._paths import _SOURCE_EXTENSIONS
+
+    for ext in (".md", ".txt", ".yaml", ".py"):
+        assert ext in _SOURCE_EXTENSIONS
 
 
 def test_load_sources_used_by_rulebook_generate(tmp_path: Path) -> None:
@@ -413,3 +402,59 @@ def test_cli_command_isolation():
             # Both should execute independently
             assert result1.exit_code in [0, 1, 2]
             assert result2.exit_code in [0, 1, 2]
+
+
+# ---------------------------------------------------------------------------
+# load_git_repo_from_url tests
+# ---------------------------------------------------------------------------
+
+def test_load_git_repo_from_url_clones_and_walks(tmp_path):
+    """load_git_repo_from_url should clone, walk, and clean up the tempdir."""
+    from specwiz.cli._paths import load_git_repo_from_url
+
+    fake_content = "# Hello from remote repo"
+
+    def fake_run(cmd, **kwargs):
+        # Simulate git writing a file into the clone target (tmpdir = cmd[-1])
+        clone_dir = Path(cmd[-1])
+        (clone_dir / "README.md").write_text(fake_content)
+        result = MagicMock()
+        result.returncode = 0
+        result.stderr = ""
+        return result
+
+    with patch("specwiz.cli._paths.subprocess.run", side_effect=fake_run), \
+         patch("specwiz.cli._paths.shutil.which", return_value="/usr/bin/git"):
+        content = load_git_repo_from_url("https://github.com/org/repo.git", _console)
+
+    assert fake_content in content
+
+
+def test_load_git_repo_from_url_git_not_found():
+    """load_git_repo_from_url exits with code 1 when git is not on PATH."""
+    import pytest
+    from specwiz.cli._paths import load_git_repo_from_url
+
+    with patch("specwiz.cli._paths.shutil.which", return_value=None), \
+         pytest.raises(SystemExit) as exc_info:
+        load_git_repo_from_url("https://github.com/org/repo.git", _console)
+
+    assert exc_info.value.code == 1
+
+
+def test_load_git_repo_from_url_clone_failure():
+    """load_git_repo_from_url exits with code 1 on non-zero git return code."""
+    import pytest
+    from specwiz.cli._paths import load_git_repo_from_url
+
+    mock_result = MagicMock()
+    mock_result.returncode = 128
+    mock_result.stderr = "fatal: repository not found"
+
+    with patch("specwiz.cli._paths.shutil.which", return_value="/usr/bin/git"), \
+         patch("specwiz.cli._paths.subprocess.run", return_value=mock_result), \
+         pytest.raises(SystemExit) as exc_info:
+        load_git_repo_from_url("https://github.com/org/missing.git", _console)
+
+    assert exc_info.value.code == 1
+

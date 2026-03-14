@@ -1,231 +1,229 @@
-"""Generate commands for creating documentation."""
+"""Generate commands: prd, user-guide, release-notes."""
 
 import asyncio
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import List, Optional
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
 
-from specwiz.adapters import (
-    AnthropicAdapter,
-    BlinkerEventBusAdapter,
-    LocalStorageAdapter,
+from specwiz.cli._engine import run_stage
+from specwiz.cli._paths import (
+    get_generated_dir,
+    load_knowledge_base,
+    load_sources,
+    validate_product,
+    validate_product_context,
+    validate_rulebook,
 )
-from specwiz.core import SpecWizPipelineEngine
-from specwiz.core.interfaces.engine import ExecutionContext
-from specwiz.core.managers import CompositeConfigAdapter
 
 generate_app = typer.Typer(help="Generate documents")
 console = Console()
 
-# Context variables injected when --sources is used with generate commands (additional info)
-_CONTEXT_INPUT_KEYS = (
-    "source_materials",       # knowledge_base_generator
-    "supporting_documents",   # product_context_generator
-)
 
-# Example variables injected when --sources is used with rulebook generate (style/standards examples)
-_EXAMPLE_INPUT_KEYS = (
-    "example_requirements",   # engineering_rulebook_generator
-    "example_user_guides",    # writing_rulebook_generator
-    "example_diagrams",       # architecture_rulebook_generator
-    "example_release_notes",  # qa_rulebook_generator
-)
-
-_SOURCE_EXTENSIONS = {".md", ".txt", ".yaml", ".yml", ".py"}
+def _timestamp() -> str:
+    return datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
-def _load_sources(paths: List[str]) -> str:
-    """Read files and directories and return their concatenated content."""
-    sections: List[str] = []
 
-    for raw_path in paths:
-        p = Path(raw_path)
-        if not p.exists():
-            console.print(f"[yellow]Warning: source path not found, skipping: {raw_path}[/yellow]")
-            continue
+# ──────────────────────────────────────────────
+# generate prd
+# ──────────────────────────────────────────────
 
-        if p.is_file():
-            files = [p]
-        else:
-            files = sorted(
-                f for f in p.iterdir()
-                if f.is_file() and f.suffix in _SOURCE_EXTENSIONS
-            )
-
-        for f in files:
-            try:
-                content = f.read_text(encoding="utf-8")
-                sections.append(f"--- {f.name} ---\n{content}")
-            except Exception as exc:
-                console.print(f"[yellow]Warning: could not read {f}: {exc}[/yellow]")
-
-    return "\n\n".join(sections)
-
-
-async def _execute_generation(
-    doc_type: str,
-    project_root: Path,
-    config: CompositeConfigAdapter,
-    source_paths: Optional[List[str]] = None,
-    **options: Any,
-) -> bool:
-    """Execute document generation pipeline."""
-
-    try:
-        # Inject external sources into all relevant stage input variables
-        if source_paths:
-            sources_content = _load_sources(source_paths)
-            if sources_content:
-                for key in _CONTEXT_INPUT_KEYS:
-                    options.setdefault(key, sources_content)
-
-        # Initialize adapters
-        storage = LocalStorageAdapter(
-            base_path=project_root / config.get("storage_path", ".specwiz")
-        )
-        event_bus = BlinkerEventBusAdapter()
-
-        # Get or create LLM adapter
-        try:
-            llm = AnthropicAdapter()
-        except ValueError as e:
-            console.print(f"[red]Error: {e}[/red]")
-            return False
-
-        # Initialize engine
-        engine = SpecWizPipelineEngine(
-            storage=storage,
-            llm=llm,
-            event_bus=event_bus,
-        )
-        await engine.initialize()
-
-        # Create execution context
-        context = ExecutionContext(
-            project_root=str(project_root),
-            project_name=config.get("project_name", "unknown"),
-            stage_name="start",
-            stage_number=0,
-            inputs=options,
-        )
-
-        # Show progress
-        with Progress() as progress:
-            task = progress.add_task(
-                f"[cyan]Generating {doc_type}...",
-                total=None,
-            )
-
-            # Execute pipeline
-            result = await engine.execute_pipeline(
-                start_stage="knowledge_base_generator",
-                context=context,
-            )
-            progress.update(task, completed=True)
-
-        if result.success:
-            console.print(
-                Panel(
-                    f"[green]✓ {doc_type} generated successfully![/green]\n"
-                    f"Artifacts: {len(result.artifacts)}\n"
-                    f"Output: {config.get('storage_path')}",
-                    title="Generation Complete",
-                    expand=False,
-                )
-            )
-            return True
-        else:
-            console.print(f"[red]Error: {result.error}[/red]")
-            return False
-
-    except Exception as e:
-        console.print(f"[red]Generation failed: {e}[/red]")
-        return False
-
-
-@generate_app.command()
+@generate_app.command("prd")
 def prd(
-    product: str = typer.Option(..., help="Product name"),
-    feature: str = typer.Option(None, help="Feature to document"),
-    repo: str = typer.Option(".", help="Repository path"),
-    sources: Optional[List[str]] = typer.Option(
-        None, "--sources", help="Extra source files or directories to inject (repeatable)"
+    product: str = typer.Option(..., "--product", help="Initialized product name"),
+    feature: str = typer.Option(..., "--feature", help="Feature to document"),
+    resources: Optional[List[str]] = typer.Option(
+        None,
+        "--resources",
+        help="Additional context files (feature specs, research, etc.) — repeatable",
     ),
 ) -> None:
-    """Generate a Product Requirements Document."""
-    project_root = Path(repo).resolve()
-    config = CompositeConfigAdapter(project_root=project_root)
+    """Generate a Product Requirements Document for a feature."""
+    cwd = Path.cwd()
+    product_path = validate_product(product, cwd)
+    product_context = validate_product_context(product, cwd)
+    requirement_rulebook = validate_rulebook("prd", cwd)
+    knowledge_base = load_knowledge_base(cwd)
 
-    success = asyncio.run(
-        _execute_generation(
-            "PRD",
-            project_root,
-            config,
-            source_paths=sources or [],
-            product_name=product,
-            feature_name=feature,
+    resources_content = load_sources(resources, console) if resources else ""
+
+    out_dir = get_generated_dir(product, "prd", cwd)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / f"{_timestamp()}-prd.md"
+
+    with Progress() as progress:
+        task = progress.add_task("[cyan]Generating PRD...", total=None)
+        content = asyncio.run(
+            run_stage(
+                "prd_generator",
+                product_path,
+                {
+                    "product_name": product,
+                    "feature_name": feature,
+                    "feature_goal": resources_content,
+                    "product_context": product_context,
+                    "knowledge_base": knowledge_base,
+                    "requirement_rulebook": requirement_rulebook,
+                },
+                console,
+            )
+        )
+        progress.update(task, completed=True)
+
+    out_file.write_text(content, encoding="utf-8")
+    console.print(
+        Panel(
+            f"[green]✓ PRD generated![/green]\n"
+            f"Product: [bold]{product}[/bold]\n"
+            f"Feature: {feature}\n"
+            f"Output: {out_file.relative_to(cwd)}",
+            title="PRD Generated",
+            expand=False,
         )
     )
 
-    sys.exit(0 if success else 1)
 
+# ──────────────────────────────────────────────
+# generate user-guide
+# ──────────────────────────────────────────────
 
-@generate_app.command()
+@generate_app.command("user-guide")
 def user_guide(
-    product: str = typer.Option(..., help="Product name"),
-    feature: str = typer.Option(None, help="Feature to document"),
-    audience: str = typer.Option("general", help="Target audience"),
-    repo: str = typer.Option(".", help="Repository path"),
-    sources: Optional[List[str]] = typer.Option(
-        None, "--sources", help="Extra source files or directories to inject (repeatable)"
+    product: str = typer.Option(..., "--product", help="Initialized product name"),
+    feature: Optional[str] = typer.Option(
+        None,
+        "--feature",
+        help="Specific feature or workflow to document (omit to document the whole product)",
+    ),
+    audience: str = typer.Option("end-user", "--audience", help="Target audience"),
+    resources: Optional[List[str]] = typer.Option(
+        None,
+        "--resources",
+        help="Additional context files (API specs, mockups, etc.) — repeatable",
     ),
 ) -> None:
-    """Generate a user guide."""
-    project_root = Path(repo).resolve()
-    config = CompositeConfigAdapter(project_root=project_root)
+    """Generate a user guide for a product or specific feature."""
+    cwd = Path.cwd()
+    product_path = validate_product(product, cwd)
+    product_context = validate_product_context(product, cwd)
+    user_guide_rulebook = validate_rulebook("user-guide", cwd)
+    knowledge_base = load_knowledge_base(cwd)
 
-    success = asyncio.run(
-        _execute_generation(
-            "User Guide",
-            project_root,
-            config,
-            source_paths=sources or [],
-            product_name=product,
-            feature_name=feature,
-            target_audience=audience,
+    resources_content = load_sources(resources, console) if resources else ""
+    feature_or_workflow = feature or f"{product} — complete product guide"
+
+    out_dir = get_generated_dir(product, "user-guide", cwd)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / f"{_timestamp()}-user-guide.md"
+
+    with Progress() as progress:
+        task = progress.add_task("[cyan]Generating user guide...", total=None)
+        content = asyncio.run(
+            run_stage(
+                "user_guide_generator",
+                product_path,
+                {
+                    "product_name": product,
+                    "feature_or_workflow": feature_or_workflow,
+                    "target_audience": audience,
+                    "product_context": product_context,
+                    "knowledge_base": knowledge_base,
+                    "user_guide_rulebook": user_guide_rulebook,
+                    "api_specs": resources_content,
+                },
+                console,
+            )
+        )
+        progress.update(task, completed=True)
+
+    out_file.write_text(content, encoding="utf-8")
+    console.print(
+        Panel(
+            f"[green]✓ User guide generated![/green]\n"
+            f"Product: [bold]{product}[/bold]\n"
+            f"Scope: {feature_or_workflow}\n"
+            f"Audience: {audience}\n"
+            f"Output: {out_file.relative_to(cwd)}",
+            title="User Guide Generated",
+            expand=False,
         )
     )
 
-    sys.exit(0 if success else 1)
 
+# ──────────────────────────────────────────────
+# generate release-notes
+# ──────────────────────────────────────────────
 
-@generate_app.command()
+@generate_app.command("release-notes")
 def release_notes(
-    product: str = typer.Option(..., help="Product name"),
-    version: str = typer.Option(..., help="Release version"),
-    repo: str = typer.Option(".", help="Repository path"),
-    sources: Optional[List[str]] = typer.Option(
-        None, "--sources", help="Extra source files or directories to inject (repeatable)"
+    product: str = typer.Option(..., "--product", help="Initialized product name"),
+    release_version: str = typer.Option(
+        "", "--release-version", help="Release version string (e.g. v2.1.0)"
+    ),
+    resources: Optional[List[str]] = typer.Option(
+        None,
+        "--resources",
+        help="Development artifacts: commits, PRs, tickets, changelogs (repeatable, at least one required)",
     ),
 ) -> None:
-    """Generate release notes."""
-    project_root = Path(repo).resolve()
-    config = CompositeConfigAdapter(project_root=project_root)
+    """Generate release notes from development artifacts."""
+    if not resources:
+        console.print("[red]Error: at least one --resources path is required.[/red]")
+        console.print(
+            "Example: [cyan]specwiz generate release-notes "
+            "--product myapp --resources ./changelog.txt[/cyan]"
+        )
+        sys.exit(1)
 
-    success = asyncio.run(
-        _execute_generation(
-            "Release Notes",
-            project_root,
-            config,
-            source_paths=sources or [],
-            product_name=product,
-            version=version,
+    cwd = Path.cwd()
+    product_path = validate_product(product, cwd)
+    product_context = validate_product_context(product, cwd)
+    release_notes_rulebook = validate_rulebook("release-note", cwd)
+    knowledge_base = load_knowledge_base(cwd)
+
+    resources_content = load_sources(resources, console)
+    release_date = datetime.now().strftime("%B %d, %Y")
+
+    out_dir = get_generated_dir(product, "release-notes", cwd)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    label = release_version.lstrip("v") if release_version else _timestamp()
+    out_file = out_dir / f"{label}-release-notes.md"
+
+    with Progress() as progress:
+        task = progress.add_task("[cyan]Generating release notes...", total=None)
+        content = asyncio.run(
+            run_stage(
+                "release_notes_generator",
+                product_path,
+                {
+                    "product_name": product,
+                    "release_version": release_version,
+                    "release_date": release_date,
+                    "product_context": product_context,
+                    "knowledge_base": knowledge_base,
+                    "release_notes_rulebook": release_notes_rulebook,
+                    "commit_messages": resources_content,
+                    "feature_specs": resources_content,
+                },
+                console,
+            )
+        )
+        progress.update(task, completed=True)
+
+    out_file.write_text(content, encoding="utf-8")
+    console.print(
+        Panel(
+            f"[green]✓ Release notes generated![/green]\n"
+            f"Product: [bold]{product}[/bold]\n"
+            f"Version: {release_version or 'unversioned'}\n"
+            f"Output: {out_file.relative_to(cwd)}",
+            title="Release Notes Generated",
+            expand=False,
         )
     )
-
-    sys.exit(0 if success else 1)

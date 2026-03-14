@@ -12,20 +12,30 @@ Make documentation generation as repeatable and trustworthy as running a test su
 # Install
 pip install -e .
 
-# Initialize a new project
-specwiz init --product MyProduct --repo /path/to/repo
+# 1. Initialize a product
+specwiz init --product MyProduct
 
-# Generate a PRD
+# 2. Build the global knowledge base from your docs (once per workspace)
+specwiz create knowledge-base --sources ./docs
+
+# 3. Create product context from the git repo
+specwiz create product-context --product MyProduct --git .
+# or from a remote URL
+specwiz create product-context --product MyProduct --git https://github.com/org/repo.git
+
+# 4. Create global rulebooks from your organization's example documents (once per workspace)
+specwiz create rulebook prd --resources ./examples/prd
+specwiz create rulebook user-guide --resources ./examples/user-guide
+specwiz create rulebook release-note --resources ./examples/release-notes
+
+# 5. Generate documents
 specwiz generate prd --product MyProduct --feature "New Dashboard"
-
-# Generate a PRD with extra source documents (PRD, SAD, design docs)
-specwiz generate prd --product MyProduct --feature "New Dashboard" --sources docs/prd.md --sources docs/sad.md
-
-# Generate a user guide
 specwiz generate user-guide --product MyProduct --feature "Dashboard"
+specwiz generate release-notes --product MyProduct --release-version v1.2.0 --resources ./changelog.txt
 
-# Generate release notes
-specwiz generate release-notes --product MyProduct --version 1.0.0
+# Inspect what's available
+specwiz rulebook list
+specwiz doctor
 ```
 
 ## Architecture

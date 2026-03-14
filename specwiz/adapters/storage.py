@@ -67,7 +67,6 @@ class LocalStorageAdapter(StorageAdapter):
 
         # Write content
         if isinstance(content, bytes):
-            asyncio.coroutine(lambda: None)  # placeholder
             target_path.write_bytes(content)
         else:
             target_path.write_text(content, encoding="utf-8")

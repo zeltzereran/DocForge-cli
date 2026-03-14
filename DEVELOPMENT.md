@@ -29,12 +29,15 @@ specwiz-cli/
 │   │   ├── events.py                # BlinkerEventBusAdapter
 │   │   └── __init__.py
 │   ├── cli/                         # CLI interface (uses core)
-│   │   ├── main.py                  # Main Typer app
+│   │   ├── main.py                  # Main Typer app: init, doctor, registers sub-apps
+│   │   ├── _paths.py                # Path helpers + validation + file loading utilities
+│   │   ├── _engine.py               # run_stage() shared async wrapper
 │   │   ├── commands/
-│   │   │   ├── generate.py
-│   │   │   └── rulebook.py
+│   │   │   ├── create.py            # create knowledge-base / product-context / rulebook *
+│   │   │   ├── generate.py          # generate prd / user-guide / release-notes
+│   │   │   └── rulebook.py          # rulebook list
 │   │   └── __init__.py
-│   └── prompts/                     # Prompt definitions
+│   └── prompts/                     # Prompt definitions (metadata.yaml + template.md)
 │       ├── knowledge_base_generator/
 │       ├── product_context_generator/
 │       ├── engineering_rulebook_generator/
@@ -47,16 +50,22 @@ specwiz-cli/
 ├── tests/
 │   ├── conftest.py
 │   ├── unit/
-│   │   └── test_storage_adapter.py
+│   │   ├── test_storage_adapter.py
+│   │   ├── adapters/
+│   │   │   └── test_llm_adapter.py
+│   │   ├── cli/
+│   │   │   └── test_cli_commands.py
+│   │   └── managers/
+│   │       ├── test_config_manager.py
+│   │       ├── test_context_manager.py
+│   │       └── test_rulebook_manager.py
 │   └── integration/
 │       └── test_full_pipeline.py
 ├── pyproject.toml
 ├── README.md
 ├── QUICKSTART.md
-├── Makefile
-└── .github/workflows/
-    ├── test.yml
-    └── lint.yml
+├── DEVELOPMENT.md
+└── Makefile
 ```
 
 ## Architecture Principles
