@@ -263,4 +263,4 @@ For issues or questions:
 
 ## License
 
-MIT
+Apache 2.0
