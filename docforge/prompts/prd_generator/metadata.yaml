@@ -1,0 +1,7 @@
+name: prd_generator
+description: Generates Product Requirement Documents (PRDs) aligned with organizational standards
+version: 1.0
+category: document
+template_path: docforge/prompts/prd_generator
+requires: [engineering_rulebook_generator, writing_rulebook_generator, product_context_generator]
+tags: [pipeline_stage_4, document_generation, prd]

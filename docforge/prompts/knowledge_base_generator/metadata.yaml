@@ -1,0 +1,47 @@
+name: knowledge_base_generator
+description: >
+  Analyzes source materials and produces a consolidated knowledge base
+  that serves as foundational context for documentation generation.
+version: 1.0
+category: knowledge_base
+template_path: docforge/prompts/knowledge_base_generator
+
+input_schema:
+  properties:
+    source_materials:
+      type: string
+      description: "Source documents, code repositories, or materials containing domain knowledge"
+    project_context:
+      type: string
+      description: "(Optional) Additional project context or constraints"
+  required:
+    - source_materials
+
+output_schema:
+  properties:
+    knowledge_base:
+      type: string
+      description: "Structured knowledge base with explicit definitions, cross-references, and source citations"
+    conflicts_identified:
+      type: string
+      description: "(Optional) Conflicts or ambiguities found between sources"
+    gaps_flagged:
+      type: string
+      description: "(Optional) Missing information areas requiring follow-up"
+  required:
+    - knowledge_base
+
+tags:
+  - pipeline_stage_1
+  - foundation
+      type: string
+      description: Structured knowledge base document
+  required:
+    - knowledge_base
+
+tags:
+  - pipeline_stage_1
+  - knowledge_extraction
+  - foundational
+
+requires: []

@@ -1,0 +1,13 @@
+name: architecture_rulebook_generator
+description: Creates architectural design principles and patterns rulebook
+version: 1.0
+category: rulebook
+template_path: docforge/prompts/architecture_rulebook_generator
+input_schema:
+  properties:
+    product_context: {type: string}
+requires: [product_context_generator]
+tags: [pipeline_stage_3, rulebook_generation, architecture]
+output_schema:
+  properties:
+    architecture_rulebook: {type: string}

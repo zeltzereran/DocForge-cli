@@ -1,0 +1,32 @@
+name: engineering_rulebook_generator
+description: Creates engineering standards and practices rulebook for the organization
+version: 1.0
+category: rulebook
+template_path: docforge/prompts/engineering_rulebook_generator
+
+input_schema:
+  properties:
+    product_context:
+      type: string
+      description: Product overview and architecture
+    engineering_practices:
+      type: string
+      description: Examples or guidance on engineering best practices
+  required:
+    - product_context
+
+output_schema:
+  properties:
+    engineering_rulebook:
+      type: string
+      description: Complete engineering rulebook/standards document
+  required:
+    - engineering_rulebook
+
+tags:
+  - pipeline_stage_3
+  - rulebook_generation
+  - standards
+
+requires:
+  - product_context_generator

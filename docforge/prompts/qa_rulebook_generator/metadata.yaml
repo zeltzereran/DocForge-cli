@@ -1,0 +1,7 @@
+name: qa_rulebook_generator
+description: Creates QA and testing standards rulebook
+version: 1.0
+category: rulebook
+template_path: docforge/prompts/qa_rulebook_generator
+requires: [product_context_generator]
+tags: [pipeline_stage_3, rulebook_generation, qa]

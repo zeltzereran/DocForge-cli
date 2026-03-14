@@ -1,0 +1,27 @@
+name: writing_rulebook_generator
+description: Creates documentation writing standards and style guide
+version: 1.0
+category: rulebook
+template_path: docforge/prompts/writing_rulebook_generator
+
+input_schema:
+  properties:
+    product_context:
+      type: string
+    example_documents:
+      type: string
+  required:
+    - product_context
+
+output_schema:
+  properties:
+    writing_rulebook:
+      type: string
+
+requires:
+  - product_context_generator
+
+tags:
+  - pipeline_stage_3
+  - rulebook_generation
+  - writing

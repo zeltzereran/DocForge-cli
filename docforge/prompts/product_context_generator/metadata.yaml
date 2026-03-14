@@ -1,0 +1,53 @@
+name: product_context_generator
+description: >
+  Extracts and structures product context into four separate documents:
+  overview, architecture, data model, and glossary. Optimized for AI consumption.
+version: 1.0
+category: context
+template_path: docforge/prompts/product_context_generator
+
+input_schema:
+  properties:
+    repository_content:
+      type: string
+      description: "Repository README, source code structure, and all documentation"
+    knowledge_base:
+      type: string
+      description: "(Optional) Previously generated knowledge base for context reconciliation"
+    product_name:
+      type: string
+      description: "Name of the product"
+    supporting_documents:
+      type: string
+      description: "(Optional) Additional product documentation, PRDs, or design documents"
+  required:
+    - repository_content
+    - product_name
+
+output_schema:
+  properties:
+    product_overview:
+      type: string
+      description: "Product mission, goals, use cases, personas, key modules, and workflows"
+    architecture:
+      type: string
+      description: "System design, components, data flows, backend services, and technologies"
+    data_model:
+      type: string
+      description: "Entity definitions, relationships, schemas, and API request/response shapes"
+    glossary:
+      type: string
+      description: "Alphabetical product-specific terminology with definitions and context"
+  required:
+    - product_overview
+    - architecture
+    - data_model
+
+tags:
+  - pipeline_stage_2
+  - depends_on_knowledge_base
+  - context_generation
+  - product_analysis
+
+requires:
+  - knowledge_base_generator

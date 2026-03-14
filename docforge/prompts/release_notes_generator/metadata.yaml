@@ -1,0 +1,7 @@
+name: release_notes_generator
+description: Generates release notes from development artifacts
+version: 1.0
+category: document
+template_path: docforge/prompts/release_notes_generator
+requires: [writing_rulebook_generator, product_context_generator]
+tags: [pipeline_stage_4, document_generation, release_notes]
