@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import typer
+from typing import Any
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
@@ -26,7 +27,7 @@ async def _execute_generation(
     doc_type: str,
     project_root: Path,
     config: CompositeConfigAdapter,
-    **options,
+    **options: Any,
 ) -> bool:
     """Execute document generation pipeline."""
 

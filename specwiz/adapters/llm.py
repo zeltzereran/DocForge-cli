@@ -1,7 +1,7 @@
 """Anthropic Claude LLM adapter."""
 
 import os
-from typing import Any, Optional
+from typing import Any, AsyncIterator, Optional
 
 from anthropic import Anthropic, AsyncAnthropic
 
@@ -61,7 +61,7 @@ class AnthropicAdapter(LLMAdapter):
             max_tokens=max_tokens,
             temperature=temperature,
             system=system or "",
-            messages=messages,
+            messages=messages,  # type: ignore[arg-type]
             **kwargs,
         )
 
@@ -87,7 +87,7 @@ class AnthropicAdapter(LLMAdapter):
         temperature: float = 0.7,
         max_tokens: int = 4096,
         **kwargs: Any,
-    ):
+    ) -> AsyncIterator[str]:
         """Stream response from Claude.
 
         Args:
@@ -107,7 +107,7 @@ class AnthropicAdapter(LLMAdapter):
             max_tokens=max_tokens,
             temperature=temperature,
             system=system or "",
-            messages=messages,
+            messages=messages,  # type: ignore[arg-type]
             **kwargs,
         ) as stream:
             for text in stream.text_stream:

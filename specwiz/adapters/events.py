@@ -19,7 +19,7 @@ class BlinkerEventBusAdapter(EventBusAdapter):
     def __init__(self) -> None:
         """Initialize event bus with common SpecWiz lifecycle events."""
         # Pre-define common signals to avoid typos
-        self._signals: dict[str, signal] = {}
+        self._signals: dict[str, Any] = {}
         self._register_signal("pipeline.start")
         self._register_signal("pipeline.stage.begin")
         self._register_signal("pipeline.stage.end")
@@ -28,7 +28,7 @@ class BlinkerEventBusAdapter(EventBusAdapter):
         self._register_signal("artifact.saved")
         self._register_signal("artifact.loaded")
 
-    def _register_signal(self, event_type: str) -> signal:
+    def _register_signal(self, event_type: str) -> Any:
         """Register or get a signal by type name.
 
         Args:

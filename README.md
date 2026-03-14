@@ -82,12 +82,6 @@ ruff check --fix specwiz tests
 mypy specwiz
 ```
 
-## Documentation
-
-- [Product Specification](SpecWiz_CLI_PRD.md)
-- [System Architecture](SpecWiz_SAD.md)
-- [Execution Plan](SpecWiz_Execution_Plan.md)
-
 ## License
 
 Apache 2.0

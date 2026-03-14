@@ -116,7 +116,7 @@ class ContextManager:
 
             lines = [f"# Recent Git History ({len(commits)} commits)\n"]
             for commit in commits:
-                lines.append(f"- {commit.hexsha[:7]}: {commit.message.splitlines()[0]}")
+                lines.append(f"- {commit.hexsha[:7]}: {commit.message.splitlines()[0]}")  # type: ignore[str-bytes-safe]
 
             return "\n".join(lines)
         except Exception:
@@ -134,7 +134,7 @@ class ContextManager:
         pyproject = self.repo_path / "pyproject.toml"
         if pyproject.exists():
             try:
-                import tomllib
+                import tomllib  # type: ignore[import-not-found]
 
                 content = tomllib.loads(pyproject.read_text())
                 if "project" in content:

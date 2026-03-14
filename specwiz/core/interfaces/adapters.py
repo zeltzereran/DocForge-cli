@@ -5,7 +5,7 @@ Adapters are injected dependencies - the engine never instantiates them directly
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -89,14 +89,14 @@ class LLMAdapter(ABC):
         pass
 
     @abstractmethod
-    async def stream_complete(
+    def stream_complete(
         self,
         prompt: str,
         system: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
         **kwargs: Any,
-    ):
+    ) -> AsyncIterator[str]:
         """Stream response from LLM."""
         pass
 
@@ -143,12 +143,12 @@ class EventBusAdapter(ABC):
     """
 
     @abstractmethod
-    def subscribe(self, event_type: str, handler: callable) -> None:
+    def subscribe(self, event_type: str, handler: Callable[..., Any]) -> None:
         """Subscribe to event type."""
         pass
 
     @abstractmethod
-    def unsubscribe(self, event_type: str, handler: callable) -> None:
+    def unsubscribe(self, event_type: str, handler: Callable[..., Any]) -> None:
         """Unsubscribe from event type."""
         pass
 
