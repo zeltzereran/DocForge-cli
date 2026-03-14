@@ -59,14 +59,14 @@ class PromptRegistry:
             return
 
         # Load metadata
-        metadata_data = yaml.safe_load(metadata_file.read_text())
+        metadata_data = yaml.safe_load(metadata_file.read_text(encoding="utf-8"))
 
         # Load template (look for .md, .txt, .jinja2)
         template_content = ""
         for ext in [".md", ".txt", ".jinja2"]:
             template_file = prompt_dir / f"template{ext}"
             if template_file.exists():
-                template_content = template_file.read_text()
+                template_content = template_file.read_text(encoding="utf-8")
                 break
 
         # Create input/output schemas
@@ -83,7 +83,7 @@ class PromptRegistry:
         metadata = PromptMetadata(
             name=metadata_data["name"],
             description=metadata_data.get("description", ""),
-            version=metadata_data.get("version", "1.0"),
+            version=str(metadata_data.get("version", "1.0")),
             category=metadata_data.get("category", "misc"),
             template_path=str(prompt_dir),
             input_schema=input_schema,

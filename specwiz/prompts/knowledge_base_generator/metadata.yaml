@@ -34,13 +34,6 @@ output_schema:
 tags:
   - pipeline_stage_1
   - foundation
-      type: string
-      description: Structured knowledge base document
-  required:
-    - knowledge_base
-
-tags:
-  - pipeline_stage_1
   - knowledge_extraction
   - foundational
 
